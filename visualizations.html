@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+
+{% block title %}Visualizations - Edhas{% endblock %}
+
+{% block content %}
+<section class="viz-section">
+    <div class="container">
+        <h1 class="page-title">Visualizations</h1>
+        
+        <div id="no-viz" class="no-results-message">
+            <p>No data available. Please <a href="/train">train a model</a> first.</p>
+        </div>
+        
+        <div id="viz-content" style="display: none;">
+            <div class="viz-grid">
+                <!-- Lambda vs Accuracy Chart -->
+                <div class="viz-card glass">
+                    <h3>Lambda vs Test Accuracy</h3>
+                    <div class="chart-container">
+                        <canvas id="accuracyChart"></canvas>
+                    </div>
+                    <p class="chart-desc">Impact of sparsity regularization on model accuracy</p>
+                </div>
+                
+                <!-- Lambda vs Sparsity Chart -->
+                <div class="viz-card glass">
+                    <h3>Lambda vs Sparsity</h3>
+                    <div class="chart-container">
+                        <canvas id="sparsityChart"></canvas>
+                    </div>
+                    <p class="chart-desc">Model sparsity achieved at different lambda values</p>
+                </div>
+                
+                <!-- Training Time Comparison -->
+                <div class="viz-card glass">
+                    <h3>Training Time Comparison</h3>
+                    <div class="chart-container">
+                        <canvas id="timeChart"></canvas>
+                    </div>
+                    <p class="chart-desc">Training duration for each configuration</p>
+                </div>
+                
+                <!-- Model Size Comparison -->
+                <div class="viz-card glass">
+                    <h3>Model Size Comparison</h3>
+                    <div class="chart-container">
+                        <canvas id="sizeChart"></canvas>
+                    </div>
+                    <p class="chart-desc">Effective model size after pruning</p>
+                </div>
+            </div>
+            
+            <!-- Gate Distribution -->
+            <div class="gate-dist-section glass">
+                <h3>Gate Value Distribution</h3>
+                <p class="chart-desc">Distribution of learned gate values across all layers</p>
+                <div class="chart-container large">
+                    <canvas id="gateChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/results')
+        .then(response => response.json())
+        .then(data => {
+            if (Object.keys(data).length === 0) {
+                document.getElementById('no-viz').style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('no-viz').style.display = 'none';
+            document.getElementById('viz-content').style.display = 'block';
+            
+            // Prepare data for charts
+            const configs = Object.keys(data);
+            const lambdas = configs.map(k => k === 'baseline' ? 0 : data[k].lambda);
+            const accuracies = configs.map(k => data[k].test_accuracy);
+            const sparsities = configs.map(k => data[k].sparsity_percent || 0);
+            const times = configs.map(k => data[k].training_time_seconds);
+            const sizes = configs.map(k => data[k].model_size_mb);
+            
+            // Common chart options
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        grid: { color: 'rgba(255,255,255,0.1)' },
+                        ticks: { color: '#a0a0a0' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#a0a0a0' }
+                    }
+                }
+            };
+            
+            // Accuracy Chart
+            new Chart(document.getElementById('accuracyChart'), {
+                type: 'line',
+                data: {
+                    labels: configs,
+                    datasets: [{
+                        data: accuracies,
+                        borderColor: '#4ade80',
+                        backgroundColor: 'rgba(74, 222, 128, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: JSON.parse(JSON.stringify(Object.assign({}, commonOptions, {
+                    scales: Object.assign({}, commonOptions.scales, {
+                        y: Object.assign({}, commonOptions.scales.y, { title: { display: true, text: 'Accuracy (%)', color: '#a0a0a0' } })
+                    })
+                })))
+            });
+            
+            // Sparsity Chart
+            new Chart(document.getElementById('sparsityChart'), {
+                type: 'bar',
+                data: {
+                    labels: configs,
+                    datasets: [{
+                        data: sparsities,
+                        backgroundColor: configs.map((_, i) => 
+                            i === 0 ? '#60a5fa' : `rgba(96, 165, 250, ${0.4 + i * 0.2})`
+                        ),
+                        borderColor: '#60a5fa',
+                        borderWidth: 1
+                    }]
+                },
+                options: JSON.parse(JSON.stringify(Object.assign({}, commonOptions, {
+                    scales: Object.assign({}, commonOptions.scales, {
+                        y: Object.assign({}, commonOptions.scales.y, { title: { display: true, text: 'Sparsity (%)', color: '#a0a0a0' }, min: 0, max: 100 })
+                    })
+                })))
+            });
+            
+            // Time Chart
+            new Chart(document.getElementById('timeChart'), {
+                type: 'bar',
+                data: {
+                    labels: configs,
+                    datasets: [{
+                        data: times,
+                        backgroundColor: '#f472b6',
+                        borderColor: '#f472b6',
+                        borderWidth: 1
+                    }]
+                },
+                options: JSON.parse(JSON.stringify(Object.assign({}, commonOptions, {
+                    scales: Object.assign({}, commonOptions.scales, {
+                        y: Object.assign({}, commonOptions.scales.y, { title: { display: true, text: 'Time (seconds)', color: '#a0a0a0' } })
+                    })
+                })))
+            });
+            
+            // Size Chart
+            new Chart(document.getElementById('sizeChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: configs,
+                    datasets: [{
+                        data: sizes,
+                        backgroundColor: ['#f87171', '#fbbf24', '#34d399', '#60a5fa'],
+                        borderColor: '#1a1a2e',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#a0a0a0' }
+                        }
+                    }
+                }
+            });
+            
+            // Fetch gate distribution
+            fetch('/api/gate-distribution')
+                .then(r => r.json())
+                .then(gateData => {
+                    if (gateData && Object.keys(gateData).length > 0) {
+                        const gateConfigs = Object.keys(gateData);
+                        const histogramData = gateConfigs.map(k => {
+                            const gates = gateData[k];
+                            // Create histogram bins
+                            const bins = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+                            gates.forEach(g => {
+                                const bin = Math.min(Math.floor(g * 10), 9);
+                                bins[bin]++;
+                            });
+                            return {
+                                label: k,
+                                data: bins,
+                                backgroundColor: k === 'baseline' ? '#60a5fa' : 
+                                    `rgba(96, 165, 250, ${0.4 + gateConfigs.indexOf(k) * 0.15})`
+                            };
+                        });
+                        
+                        new Chart(document.getElementById('gateChart'), {
+                            type: 'bar',
+                            data: {
+                                labels: ['0-0.1', '0.1-0.2', '0.2-0.3', '0.3-0.4', '0.4-0.5', 
+                                        '0.5-0.6', '0.6-0.7', '0.7-0.8', '0.8-0.9', '0.9-1.0'],
+                                datasets: histogramData
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { labels: { color: '#a0a0a0' } }
+                                },
+                                scales: {
+                                    y: {
+                                        grid: { color: 'rgba(255,255,255,0.1)' },
+                                        ticks: { color: '#a0a0a0' },
+                                        title: { display: true, text: 'Count', color: '#a0a0a0' }
+                                    },
+                                    x: {
+                                        grid: { display: false },
+                                        ticks: { color: '#a0a0a0' },
+                                        title: { display: true, text: 'Gate Value Range', color: '#a0a0a0' }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('gateChart').parentElement.innerHTML = 
+                        '<p class="error">Gate distribution data not available</p>';
+                });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+});
+</script>
+{% endblock %}

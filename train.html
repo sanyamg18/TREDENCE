@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}Train Model - Edhas{% endblock %}
+
+{% block content %}
+<section class="train-section">
+    <div class="container">
+        <h1 class="page-title">Train Model</h1>
+        
+        <div class="train-grid">
+            <!-- Training Controls -->
+            <div class="control-panel glass">
+                <h2>Training Configuration</h2>
+                
+                <div class="config-section">
+                    <h3>Lambda Values (Sparsity Regularization)</h3>
+                    <p class="hint">Select lambda values to test. Higher = more sparsity.</p>
+                    
+                    <div class="lambda-options">
+                        <label class="lambda-chip">
+                            <input type="checkbox" value="0.0001" checked class="lambda-checkbox">
+                            <span>λ = 0.0001</span>
+                        </label>
+                        <label class="lambda-chip">
+                            <input type="checkbox" value="0.001" checked class="lambda-checkbox">
+                            <span>λ = 0.001</span>
+                        </label>
+                        <label class="lambda-chip">
+                            <input type="checkbox" value="0.01" checked class="lambda-checkbox">
+                            <span>λ = 0.01</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="config-section">
+                    <h3>Training Epochs</h3>
+                    <p class="hint">Default: 20 epochs (fast). Increase for better accuracy.</p>
+                    <input type="range" id="epochs-slider" min="10" max="50" value="20" class="slider">
+                    <span id="epochs-value">20 epochs</span>
+                </div>
+                
+                <div class="config-section">
+                    <h3>Dataset</h3>
+                    <div class="dataset-info">
+                        <span class="dataset-badge">Sklearn Digits</span>
+                        <ul>
+                            <li>1,797 samples</li>
+                            <li>8×8 images (64 features)</li>
+                            <li>10 classes (0-9)</li>
+                            <li>CPU-optimized</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <button id="start-training-btn" class="btn btn-primary btn-large">
+                    <span class="btn-icon">🚀</span>
+                    Start Training
+                </button>
+                
+                <button id="export-csv-btn" class="btn btn-secondary" style="margin-top: 10px;" disabled>
+                    <span class="btn-icon">📊</span>
+                    Export Results to CSV
+                </button>
+            </div>
+            
+            <!-- Progress Panel -->
+            <div class="progress-panel glass">
+                <h2>Training Progress</h2>
+                
+                <div class="progress-section">
+                    <div class="progress-info">
+                        <span id="status-text">Ready to train</span>
+                        <span id="progress-percent">0%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+                
+                <div class="current-config">
+                    <span id="current-lambda">-</span>
+                </div>
+                
+                <div class="logs-section">
+                    <h3>Training Logs</h3>
+                    <div id="logs-container" class="logs-container">
+                        <p class="log-placeholder">Training logs will appear here...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const startBtn = document.getElementById('start-training-btn');
+    const exportBtn = document.getElementById('export-csv-btn');
+    const epochsSlider = document.getElementById('epochs-slider');
+    const epochsValue = document.getElementById('epochs-value');
+    const lambdaCheckboxes = document.querySelectorAll('.lambda-checkbox');
+    
+    // Epochs slider
+    epochsSlider.addEventListener('input', function() {
+        epochsValue.textContent = this.value + ' epochs';
+    });
+    
+    // Training status polling
+    let statusInterval = null;
+    
+    function updateStatus() {
+        fetch('/api/training-status')
+            .then(response => response.json())
+            .then(data => {
+                // Update progress
+                document.getElementById('progress-fill').style.width = data.progress + '%';
+                document.getElementById('progress-percent').textContent = data.progress + '%';
+                
+                // Update status text
+                if (data.is_training) {
+                    document.getElementById('status-text').textContent = 'Training in progress...';
+                    startBtn.disabled = true;
+                    startBtn.textContent = 'Training...';
+                } else if (data.progress === 100) {
+                    document.getElementById('status-text').textContent = 'Training complete!';
+                    startBtn.disabled = false;
+                    startBtn.innerHTML = '<span class="btn-icon">🚀</span> Start Training';
+                    exportBtn.disabled = false;
+                    clearInterval(statusInterval);
+                }
+                
+                // Update current lambda
+                if (data.current_lambda) {
+                    document.getElementById('current-lambda').textContent = 
+                        'Current: ' + data.current_lambda;
+                }
+                
+                // Update logs
+                if (data.logs && data.logs.length > 0) {
+                    const logsContainer = document.getElementById('logs-container');
+                    logsContainer.innerHTML = data.logs.map(log => 
+                        `<p class="log-line">${log}</p>`
+                    ).join('');
+                    logsContainer.scrollTop = logsContainer.scrollHeight;
+                }
+            });
+    }
+    
+    // Start training
+    startBtn.addEventListener('click', function() {
+        // Get selected lambda values
+        const selectedLambdas = Array.from(lambdaCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => parseFloat(cb.value));
+        
+        if (selectedLambdas.length === 0) {
+            alert('Please select at least one lambda value');
+            return;
+        }
+        
+        const epochs = parseInt(epochsSlider.value);
+        
+        // Start training
+        fetch('/api/start-training', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                lambda_values: selectedLambdas,
+                epochs: epochs
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Start polling status
+                statusInterval = setInterval(updateStatus, 1000);
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error starting training: ' + error);
+        });
+    });
+    
+    // Export CSV
+    exportBtn.addEventListener('click', function() {
+        window.location.href = '/api/export-csv';
+    });
+    
+    // Initial status check
+    updateStatus();
+});
+</script>
+{% endblock %}

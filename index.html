@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Edhas - Self-Pruning Neural Network{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <h1 class="hero-title">Edhas</h1>
+        <p class="hero-subtitle">Self-Pruning Neural Network for Sustainable AI</p>
+        <p class="hero-description">
+            A revolutionary approach to model optimization that reduces computational footprint 
+            while maintaining accuracy through learnable gate-based pruning during training.
+        </p>
+        <div class="hero-buttons">
+            <a href="/train" class="btn btn-primary">Start Training</a>
+            <a href="/results" class="btn btn-secondary">View Results</a>
+            <a href="/3d" class="btn btn-secondary">🎮 3D View</a>
+        </div>
+    </div>
+    <div class="hero-stats">
+        <div class="stat-card glass">
+            <span class="stat-value">50%+</span>
+            <span class="stat-label">Model Size Reduction</span>
+        </div>
+        <div class="stat-card glass">
+            <span class="stat-value">30%+</span>
+            <span class="stat-label">Inference Speedup</span>
+        </div>
+        <div class="stat-card glass">
+            <span class="stat-value">40%+</span>
+            <span class="stat-label">CO2 Reduction</span>
+        </div>
+    </div>
+</section>
+
+<section class="info-section">
+    <div class="container">
+        <div class="info-grid">
+            <div class="info-card glass">
+                <h3>🎯 Project Owner</h3>
+                <p><strong>Name:</strong> Kudrat Anand</p>
+                <p><strong>Registration:</strong> RA2311026010844</p>
+                <p><strong>Case Study:</strong> Tredence AI Engineering Internship</p>
+            </div>
+            
+            <div class="info-card glass">
+                <h3>🧠 Technical Innovation</h3>
+                <p>Learnable gate parameters that softly prune weights during training using sigmoid activation, enabling end-to-end gradient flow through both weights and gates.</p>
+            </div>
+            
+            <div class="info-card glass">
+                <h3>💼 Business Value</h3>
+                <ul>
+                    <li>Lower GPU cloud costs</li>
+                    <li>Faster inference at scale</li>
+                    <li>Reduced energy consumption</li>
+                    <li>Edge deployment ready</li>
+                </ul>
+            </div>
+            
+            <div class="info-card glass">
+                <h3>🌍 SDG Alignment</h3>
+                <ul>
+                    <li><strong>SDG 9:</strong> Industry Innovation</li>
+                    <li><strong>SDG 12:</strong> Responsible Consumption</li>
+                    <li><strong>SDG 13:</strong> Climate Action</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="architecture-section">
+    <div class="container">
+        <h2 class="section-title">Architecture Overview</h2>
+        <div class="architecture-card glass">
+            <div class="arch-flow">
+                <div class="arch-step">
+                    <div class="step-icon">📊</div>
+                    <h4>Input</h4>
+                    <p>64 features<br>(Sklearn Digits)</p>
+                </div>
+                <div class="arrow">→</div>
+                <div class="arch-step">
+                    <div class="step-icon">🚪</div>
+                    <h4>Prunable Layer</h4>
+                    <p>Weight × Sigmoid(Gate)<br>Gradient flow preserved</p>
+                </div>
+                <div class="arrow">→</div>
+                <div class="arch-step">
+                    <div class="step-icon">⚡</div>
+                    <h4>ReLU</h4>
+                    <p>Non-linear<br>activation</p>
+                </div>
+                <div class="arrow">→</div>
+                <div class="arch-step">
+                    <div class="step-icon">🎯</div>
+                    <h4>Output</h4>
+                    <p>10 classes<br>Digits 0-9</p>
+                </div>
+            </div>
+            <div class="loss-formula">
+                <p><strong>Loss = CrossEntropy(y, ŷ) + λ × Σ|gates|</strong></p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="csr-section">
+    <div class="container">
+        <h2 class="section-title">CSR Use Cases</h2>
+        <div class="csr-grid">
+            <div class="csr-card glass">
+                <div class="csr-icon">📚</div>
+                <h3>Rural Education</h3>
+                <p>Lightweight models enable AI-powered learning tools on low-cost devices in remote areas with limited connectivity and power.</p>
+            </div>
+            <div class="csr-card glass">
+                <div class="csr-icon">🏥</div>
+                <h3>Healthcare Access</h3>
+                <p>Deploy diagnostic AI on affordable hardware at rural clinics, reducing dependency on cloud infrastructure.</p>
+            </div>
+            <div class="csr-card glass">
+                <div class="csr-icon">🌱</div>
+                <h3>NGO Analytics</h3>
+                <p>Enable resource-constrained organizations to run analytics locally without expensive cloud subscriptions.</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

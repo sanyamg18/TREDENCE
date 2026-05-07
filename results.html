@@ -1,0 +1,207 @@
+{% extends 'base.html' %}
+
+{% block title %}Results - Edhas{% endblock %}
+
+{% block content %}
+<section class="results-section">
+    <div class="container">
+        <h1 class="page-title">Training Results</h1>
+        
+        <div id="no-results" class="no-results-message">
+            <p>No training results available yet. Please <a href="/train">train a model</a> first.</p>
+        </div>
+        
+        <div id="results-content" style="display: none;">
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+                <div class="summary-card glass">
+                    <h3>Best Accuracy</h3>
+                    <span id="best-accuracy" class="metric-value">-</span>
+                    <span id="best-config" class="metric-subtitle">-</span>
+                </div>
+                <div class="summary-card glass">
+                    <h3>Highest Sparsity</h3>
+                    <span id="best-sparsity" class="metric-value">-</span>
+                    <span id="sparse-config" class="metric-subtitle">-</span>
+                </div>
+                <div class="summary-card glass">
+                    <h3>Fastest Training</h3>
+                    <span id="best-time" class="metric-value">-</span>
+                    <span id="time-config" class="metric-subtitle">-</span>
+                </div>
+            </div>
+            
+            <!-- Results Table -->
+            <div class="table-container glass">
+                <h2>Detailed Results</h2>
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Configuration</th>
+                            <th>Lambda</th>
+                            <th>Test Accuracy</th>
+                            <th>Sparsity %</th>
+                            <th>Training Time</th>
+                            <th>Model Size</th>
+                            <th>Active Params</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-tbody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Cost Savings -->
+            <div class="savings-section">
+                <h2>Cost & Sustainability Savings</h2>
+                <div class="savings-grid">
+                    <div class="savings-card glass">
+                        <div class="savings-icon">💰</div>
+                        <h4>Training Cost Saved</h4>
+                        <span id="cost-saved" class="savings-value">-</span>
+                        <p>Per training run</p>
+                    </div>
+                    <div class="savings-card glass">
+                        <div class="savings-icon">🌱</div>
+                        <h4>CO2 Emissions Saved</h4>
+                        <span id="co2-saved" class="savings-value">-</span>
+                        <p>Kilograms</p>
+                    </div>
+                    <div class="savings-card glass">
+                        <div class="savings-icon">⚡</div>
+                        <h4>GPU Hours Saved</h4>
+                        <span id="gpu-hours" class="savings-value">-</span>
+                        <p>Per month</p>
+                    </div>
+                    <div class="savings-card glass">
+                        <div class="savings-icon">📦</div>
+                        <h4>Model Size Reduction</h4>
+                        <span id="size-reduction" class="savings-value">-</span>
+                        <p>Percentage</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Visual Charts Section -->
+            <div class="charts-section">
+                <h2>Visual Analysis</h2>
+                <div class="charts-grid">
+                    <div class="chart-card glass">
+                        <h3>📊 Accuracy vs Sparsity Trade-off</h3>
+                        <div class="chart-container">
+                            <canvas id="tradeoffChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card glass">
+                        <h3>⏱️ Training Time by Configuration</h3>
+                        <div class="chart-container">
+                            <canvas id="timeComparisonChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Business ROI -->
+            <div class="roi-section glass">
+                <h2>Enterprise Business Value</h2>
+                <div class="roi-content">
+                    <div class="roi-item">
+                        <span class="roi-label">Cloud Infrastructure Savings:</span>
+                        <span id="cloud-savings" class="roi-value">-</span>
+                    </div>
+                    <div class="roi-item">
+                        <span class="roi-label">Inference Speed Improvement:</span>
+                        <span id="inference-speedup" class="roi-value">-</span>
+                    </div>
+                    <div class="roi-item">
+                        <span class="roi-label">Edge Deployment Readiness:</span>
+                        <span class="roi-value">✓ Enabled</span>
+                    </div>
+                    <div class="roi-item">
+                        <span class="roi-label">Sustainability Impact:</span>
+                        <span class="roi-value">High</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/results')
+        .then(response => response.json())
+        .then(data => {
+            if (Object.keys(data).length === 0) {
+                document.getElementById('no-results').style.display = 'block';
+                document.getElementById('results-content').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('no-results').style.display = 'none';
+            document.getElementById('results-content').style.display = 'block';
+            
+            // Populate table
+            const tbody = document.getElementById('results-tbody');
+            let bestAcc = 0, bestAccConfig = '';
+            let bestSparse = 0, bestSparseConfig = '';
+            let bestTime = Infinity, bestTimeConfig = '';
+            
+            for (const [key, res] of Object.entries(data)) {
+                const row = document.createElement('tr');
+                const lambdaVal = key === 'baseline' ? '0 (Baseline)' : res.lambda;
+                
+                row.innerHTML = `
+                    <td>${key}</td>
+                    <td>${lambdaVal}</td>
+                    <td>${res.test_accuracy?.toFixed(2)}%</td>
+                    <td>${res.sparsity_percent?.toFixed(1)}%</td>
+                    <td>${res.training_time_seconds?.toFixed(1)}s</td>
+                    <td>${res.model_size_mb?.toFixed(2)} MB</td>
+                    <td>${res.active_parameters} / ${res.total_parameters}</td>
+                `;
+                tbody.appendChild(row);
+                
+                // Track bests
+                if (res.test_accuracy > bestAcc) {
+                    bestAcc = res.test_accuracy;
+                    bestAccConfig = key;
+                }
+                if (res.sparsity_percent > bestSparse) {
+                    bestSparse = res.sparsity_percent;
+                    bestSparseConfig = key;
+                }
+                if (res.training_time_seconds < bestTime) {
+                    bestTime = res.training_time_seconds;
+                    bestTimeConfig = key;
+                }
+            }
+            
+            // Update summary cards
+            document.getElementById('best-accuracy').textContent = bestAcc.toFixed(2) + '%';
+            document.getElementById('best-config').textContent = bestAccConfig;
+            document.getElementById('best-sparsity').textContent = bestSparse.toFixed(1) + '%';
+            document.getElementById('sparse-config').textContent = bestSparseConfig;
+            document.getElementById('best-time').textContent = bestTime.toFixed(1) + 's';
+            document.getElementById('time-config').textContent = bestTimeConfig;
+            
+            // Update savings (from best sparse model)
+            const sparseKey = Object.keys(data).find(k => k.includes('lambda'));
+            if (sparseKey && data[sparseKey].cost_savings) {
+                const savings = data[sparseKey].cost_savings;
+                document.getElementById('cost-saved').textContent = '$' + savings.training_cost_saved_usd?.toFixed(3);
+                document.getElementById('co2-saved').textContent = savings.co2_saved_kg?.toFixed(4) + ' kg';
+                document.getElementById('gpu-hours').textContent = savings.gpu_hours_saved?.toFixed(2) + ' hrs';
+                document.getElementById('size-reduction').textContent = savings.model_size_reduction_pct?.toFixed(1) + '%';
+                document.getElementById('cloud-savings').textContent = '$' + savings.cloud_cost_saved_monthly?.toFixed(2) + '/month';
+                document.getElementById('inference-speedup').textContent = savings.inference_speedup?.toFixed(1) + 'x';
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching results:', error);
+        });
+});
+</script>
+{% endblock %}

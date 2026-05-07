@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Edhas - Self-Pruning Neural Network{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="logo">🌿</span>
+            <span class="brand-text">Edhas</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/train">Train</a></li>
+            <li><a href="/results">Results</a></li>
+            <li><a href="/visualizations">Charts</a></li>
+            <li><a href="/3d">🎮 3D View</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 Kudrat Anand (RA2311026010844) | Tredence AI Engineering Case Study</p>
+            <p class="sdg-badges">
+                <span class="badge">SDG 9</span>
+                <span class="badge">SDG 12</span>
+                <span class="badge">SDG 13</span>
+            </p>
+        </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
